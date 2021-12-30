@@ -4,6 +4,7 @@
   "description": "",
   "main": "index.js",
   "dependencies": {
+    "@openzeppelin/contracts": "^4.4.1",
     "hardhat": "^2.8.0"
   },
   "devDependencies": {
