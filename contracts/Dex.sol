@@ -1,6 +1,8 @@
-pragma solidity 0.8.7;
+// SPDX-License-Identifier: GNU AGPLv3
+pragma solidity 0.8.4;
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 
 contract Dex is Ownable {
     enum Side {
@@ -27,7 +29,7 @@ contract Dex is Ownable {
     bytes32[] public tokenList;
     uint public nextOrderId;
     uint public nextTradeId;
-    bytes32 storage DAI = bytes32("DAI");
+    bytes32 constant DAI = bytes32("DAI");
 
     event TokenAdded(bytes32 _ticker, address _tokenAddress);
     event NewTrade(
@@ -49,6 +51,34 @@ contract Dex is Ownable {
         require(ticker != DAI, "cannot trade DAI");
         _;
     }
+
+
+    /* Getters */
+
+    function getOrders(
+        bytes32 ticker,
+        Side side)
+    external
+    view
+    returns(Order[] memory) {
+        return orderBook[ticker][uint(side)];
+    }
+
+
+    function getTokens()
+    external
+    view
+    returns(Token[] memory) {
+        Token[] memory _tokens = new Token[](tokenList.length);
+        for (uint i = 0; i < tokenList.length; i++) {
+            _tokens[i] = Token(
+                tokens[tokenList[i]].ticker,
+                tokens[tokenList[i]].tokenAddress
+            );
+        }
+        return _tokens;
+    }
+    /* functions */
     function addToken(
         bytes32 ticker,
         address tokenAddress
@@ -114,7 +144,7 @@ contract Dex is Ownable {
             amount,
             0,
             price,
-            now
+            block.timestamp
         ));
         // bubble sort algorithm (easy)
         uint i = orders.length - 1;
@@ -164,7 +194,7 @@ contract Dex is Ownable {
                 msg.sender,
                 matched,
                 orders[i].price,
-                now
+                block.timestamp
             );
             if(side == Side.SELL) {
                 traderBalances[msg.sender][ticker] -= matched;
@@ -181,7 +211,7 @@ contract Dex is Ownable {
                 traderBalances[orders[i].trader][DAI] += matched * orders[i].price;
             }
             nextTradeId++;
-            id++;
+            i++;
         }
         // prune orderBook
         i = 0;

@@ -1,9 +1,10 @@
-pragma solidity 0.8.7;
+// SPDX-License-Identifier: GNU AGPLv3
+pragma solidity 0.8.4;
 
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/ERC20Detailed.sol";
 
-contract DAI is ERC20, ERC20Detailed {
-    constructor() ERC20Detailed("DAI", "DAI Stablecoin", 18) public {}
+contract DAI is ERC20 {
+    constructor() ERC20("DAI Stablecoin", "DAI") {}
+
 }
