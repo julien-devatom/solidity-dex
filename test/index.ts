@@ -20,6 +20,7 @@ describe("Dex", function () {
   const tokens = ["DAI", "WETH", "BAT"];
   const [DAI, WETH, BAT] = tokens.map(formatBytes32String);
   before(async () => {
+    console.log("Deploy contracts");
     [owner, trader1, trader2, simpleUser] = await ethers.getSigners();
     const Dex = await ethers.getContractFactory("Dex");
     dex = await Dex.deploy();
@@ -113,6 +114,35 @@ describe("Dex", function () {
       expect(
         await tokensContracts[0].allowance(simpleUser.address, dex.address)
       ).to.be.equal(BigNumber.from("0"));
+    });
+  });
+
+  describe("Test deposit function", () => {
+    it("Should revert unknown token", async () => {
+      expect(
+        dex
+          .connect(trader1)
+          .deposit(BigNumber.from(10), formatBytes32String("REP"))
+      ).to.be.revertedWith("token does not exist");
+    });
+    it("Should transfer DAI balance of trader", async () => {
+      await dex
+        .connect(trader1)
+        .deposit(BigNumber.from(10), formatBytes32String("DAI"))
+        .then((tx: { wait: () => any }) => tx.wait());
+      expect(await tokensContracts[0].balanceOf(trader1.address)).to.be.equal(
+        initialBalance.sub(BigNumber.from(10))
+      );
+      expect(await tokensContracts[0].balanceOf(dex.address)).to.be.equal(
+        BigNumber.from(10)
+      );
+    });
+    it("Should be reverted if not allowance", async () => {
+      expect(
+        dex
+          .connect(simpleUser)
+          .deposit(BigNumber.from(10), formatBytes32String("DAI"))
+      ).to.be.reverted;
     });
   });
 });
