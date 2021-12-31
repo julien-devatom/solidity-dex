@@ -1,25 +1,47 @@
-// We require the Hardhat Runtime Environment explicitly here. This is optional
-// but useful for running the script in a standalone fashion through `node <script>`.
-//
-// When running the script with `npx hardhat run <script>` you'll find the Hardhat
-// Runtime Environment's members available in the global scope.
 import { ethers } from "hardhat";
-
+import { formatBytes32String } from "ethers/lib/utils";
+import config from "../config/ropsten.json";
 async function main() {
-  // Hardhat always runs the compile task when running scripts with its command
-  // line interface.
-  //
-  // If this script is run directly using `node` you may want to call compile
-  // manually to make sure everything is compiled
-  // await hre.run('compile');
+  const [deployer] = await ethers.getSigners();
+  console.log("Deploying DEX Smart contract to Ropsten");
+  console.log("Deployer account is ", deployer.address);
+  console.log("Account balance:", (await deployer.getBalance()).toString());
+  console.log("Waiting for deployment...");
+  const Dex = await ethers.getContractFactory("Dex");
+  const dex = await Dex.deploy({
+    gasLimit: 5000000,
+  });
 
-  // We get the contract to deploy
-  const Greeter = await ethers.getContractFactory("Greeter");
-  const greeter = await Greeter.deploy("Hello, Hardhat!");
+  await dex.deployed();
 
-  await greeter.deployed();
+  console.log("Yeah !!! DEX deployed to", dex.address);
 
-  console.log("Greeter deployed to:", greeter.address);
+  console.log("\n Add DAI, USDC and BAT tokens to the contract...");
+  // add tokens
+  console.log("Adding DAI...");
+  await dex
+    .addToken(
+      formatBytes32String(config.tokens.DAI.ticker),
+      config.tokens.DAI.address
+    )
+    .then((tx) => tx.wait());
+  console.log("DAI added !");
+  console.log("Adding USDC...");
+  await dex
+    .addToken(
+      formatBytes32String(config.tokens.USDC.ticker),
+      config.tokens.USDC.address
+    )
+    .then((tx) => tx.wait());
+  console.log("USDC added !");
+  console.log("Adding BAT...");
+  await dex
+    .addToken(
+      formatBytes32String(config.tokens.BAT.ticker),
+      config.tokens.BAT.address
+    )
+    .then((tx) => tx.wait());
+  console.log("Markets added successfully");
 }
 
 // We recommend this pattern to be able to use async/await everywhere
