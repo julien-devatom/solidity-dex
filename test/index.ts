@@ -145,4 +145,32 @@ describe("Dex", function () {
       ).to.be.reverted;
     });
   });
+  describe("Test withdraw function", () => {
+    it("Should revert unknown token", async () => {
+      expect(
+        dex
+          .connect(trader1)
+          .withdraw(BigNumber.from(10), formatBytes32String("REP"))
+      ).to.be.revertedWith("token does not exist");
+    });
+    it("Should be reverted if not sufficient balance", async () => {
+      expect(await dex.balanceInOf(DAI, trader1.address)).to.be.equal(
+        BigNumber.from(10)
+      );
+      expect(dex.connect(trader1).withdraw(BigNumber.from(15), DAI)).to.be
+        .reverted;
+    });
+    it("Should transfer DAI balance of contract", async () => {
+      await dex
+        .connect(trader1)
+        .withdraw(BigNumber.from(10), DAI)
+        .then((tx: { wait: () => any }) => tx.wait());
+      expect(await tokensContracts[0].balanceOf(trader1.address)).to.be.equal(
+        initialBalance
+      );
+      expect(await tokensContracts[0].balanceOf(dex.address)).to.be.equal(
+        BigNumber.from(0)
+      );
+    });
+  });
 });
