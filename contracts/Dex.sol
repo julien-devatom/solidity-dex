@@ -188,7 +188,7 @@ contract Dex is Ownable {
         uint i;
         uint remaining = amount;
 
-        //matching proccess
+        //matching process
         while(i< orders.length && remaining > 0) {
             uint available = orders[i].amount - orders[i].filled;
             uint matched = (remaining > available) ? available : remaining;

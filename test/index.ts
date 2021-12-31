@@ -19,6 +19,12 @@ describe("Dex", function () {
   let simpleUser: SignerWithAddress;
   const tokens = ["DAI", "WETH", "BAT"];
   const [DAI, WETH, BAT] = tokens.map(formatBytes32String);
+
+  enum SIDE {
+    BUY,
+    SELL,
+  }
+
   before(async () => {
     console.log("Deploy contracts");
     [owner, trader1, trader2, simpleUser] = await ethers.getSigners();
@@ -128,8 +134,7 @@ describe("Dex", function () {
     it("Should transfer DAI balance of trader", async () => {
       await dex
         .connect(trader1)
-        .deposit(BigNumber.from(10), formatBytes32String("DAI"))
-        .then((tx: { wait: () => any }) => tx.wait());
+        .deposit(BigNumber.from(10), formatBytes32String("DAI"));
       expect(await tokensContracts[0].balanceOf(trader1.address)).to.be.equal(
         initialBalance.sub(BigNumber.from(10))
       );
@@ -161,16 +166,58 @@ describe("Dex", function () {
         .reverted;
     });
     it("Should transfer DAI balance of contract", async () => {
-      await dex
-        .connect(trader1)
-        .withdraw(BigNumber.from(10), DAI)
-        .then((tx: { wait: () => any }) => tx.wait());
+      await dex.connect(trader1).withdraw(BigNumber.from(10), DAI);
       expect(await tokensContracts[0].balanceOf(trader1.address)).to.be.equal(
         initialBalance
       );
       expect(await tokensContracts[0].balanceOf(dex.address)).to.be.equal(
         BigNumber.from(0)
       );
+    });
+  });
+  describe("Test limit order", () => {
+    it("Should create buy limit order", async () => {
+      await dex.connect(trader1).deposit(BigNumber.from(100), DAI);
+      await dex.connect(trader1).createLimitOrder(BAT, 10, 9, SIDE.BUY);
+      const buyOrders = await dex.getOrders(BAT, SIDE.BUY);
+      const sellOrders = await dex.getOrders(BAT, SIDE.SELL);
+      expect(buyOrders).to.have.lengthOf(1);
+      expect(sellOrders).to.have.lengthOf(0);
+      expect(buyOrders[0].trader).to.be.equal(trader1.address);
+      expect(buyOrders[0].ticker).to.be.equal(BAT);
+      expect(buyOrders[0].price).to.be.equal(BigNumber.from(9));
+      expect(buyOrders[0].amount).to.be.equal(BigNumber.from(10));
+    });
+    it("Should create sell limit order", async () => {
+      await dex.connect(trader1).deposit(BigNumber.from(100), BAT);
+      await dex.connect(trader1).createLimitOrder(BAT, 10, 9, SIDE.SELL);
+      const sellOrders = await dex.getOrders(BAT, SIDE.SELL);
+      expect(sellOrders).to.have.lengthOf(1);
+      expect(sellOrders[0].trader).to.be.equal(trader1.address);
+      expect(sellOrders[0].ticker).to.be.equal(BAT);
+      expect(sellOrders[0].price).to.be.equal(BigNumber.from(9));
+      expect(sellOrders[0].amount).to.be.equal(BigNumber.from(10));
+    });
+    it("Should revert unknown token", async () => {
+      expect(
+        dex
+          .connect(trader1)
+          .createLimitOrder(formatBytes32String("REP"), 10, 9, SIDE.SELL)
+      ).to.be.reverted;
+    });
+    it("Should revert insufficient DAI balance for BUY limit order", async () => {
+      expect(dex.connect(trader1).createLimitOrder(BAT, 1000, 9, SIDE.BUY)).to
+        .be.reverted; // trader 1 have not 9000 DAI in the contract
+    });
+    it("Should revert insufficient token balance for SELL limit order", async () => {
+      expect(dex.connect(trader1).createLimitOrder(BAT, 1001, 9, SIDE.SELL)).to
+        .be.reverted; // trader 1 have not 1001 BAT in the contract
+    });
+    it("Should revert trade of DAI", async () => {
+      expect(dex.connect(trader1).createLimitOrder(DAI, 1, 1, SIDE.SELL)).to.be
+        .reverted;
+      expect(dex.connect(trader1).createLimitOrder(DAI, 1, 1, SIDE.BUY)).to.be
+        .reverted;
     });
   });
 });
