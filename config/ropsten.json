@@ -1,0 +1,16 @@
+{
+  "tokens": {
+    "DAI": {
+      "ticker": "DAI",
+      "address": "0x31F42841c2db5173425b5223809CF3A38FEde360"
+    },
+    "USDC": {
+      "ticker": "USDC",
+      "address": "0x07865c6E87B9F70255377e024ace6630C1Eaa37F"
+    },
+    "BAT": {
+        "ticker": "BAT",
+        "address": "0x50390975D942E83D661D4Bde43BF73B0ef27b426"
+      }
+  }
+}
