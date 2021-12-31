@@ -63,6 +63,14 @@ contract Dex is Ownable {
     returns(Order[] memory) {
         return orderBook[ticker][uint(side)];
     }
+    function balanceInOf(
+        bytes32 ticker,
+        address trader)
+    external
+    view
+    returns(uint) {
+        return traderBalances[trader][ticker];
+    }
 
 
     function getTokens()
